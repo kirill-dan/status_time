@@ -1,0 +1,39 @@
+<?php
+
+/**
+ * @file 
+ * status_time.install
+ */
+
+
+/**
+ * Implementation hook_uninstall()
+ *
+ */
+function status_time_uninstall() {
+  drupal_uninstall_schema('status_time');
+}
+
+/**
+ * Implementation hook_schema()
+ *
+ */
+function status_time_schema() {
+  $schema['field_status_time'] = array(
+    'fields' => array(
+      'uid' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'description' => 'Unique user ID',
+      ),
+      'days' => array(
+        'type' => 'int',
+        'not null' => TRUE,
+        'default' => 0,
+        'description' => 'Days activate status user',
+      ),
+    ),
+    'unique keys' => array('uid' => array('uid')),
+  );
+  return $schema;
+}

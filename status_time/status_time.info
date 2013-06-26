@@ -1,0 +1,5 @@
+name        = Status time
+description = Set lifetime active status (in days) when Admin add new user
+core        = 7.x
+package     = Status Time
+version     = 7.x-1.0
