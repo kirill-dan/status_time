@@ -3,37 +3,47 @@
 /**
  * @file 
  * status_time.install
+ * Developer: Danilevsky Kirill k.danilevsky@gmail.com
+ * version 1.1
  */
-
 
 /**
  * Implementation hook_uninstall()
  *
  */
 function status_time_uninstall() {
-  drupal_uninstall_schema('status_time');
+  field_delete_field('field_end_date');
+  field_delete_instance(field_info_instance('user', 'field_end_date', 'user'));
 }
 
 /**
- * Implementation hook_schema()
- *
+ * Implementation of hook_install().
  */
-function status_time_schema() {
-  $schema['field_status_time'] = array(
-    'fields' => array(
-      'uid' => array(
-        'type' => 'int',
-        'not null' => TRUE,
-        'description' => 'Unique user ID',
+function status_time_install() {
+  // Check if our field is not already created.
+  if (!field_info_field('field_end_date')) {
+    $field = array(
+      'field_name' => 'field_end_date',
+      'type' => 'datestamp',
+    );
+    field_create_field($field);
+    // Create the instance on the bundle.
+    $instance = array(
+      'field_name' => 'field_end_date',
+      'entity_type' => 'user',
+      'label' => 'Date account blocking',
+      'description' => 'Enter the date when the user will be blocked. Empty field - no limits.',
+      'bundle' => 'user',
+      // If you don't set the "required" property then the field wont be required by default.
+      'required' => FALSE,
+      'settings' => array(
+        // Here you inform either or not you want this field showing up on the registration form.
+        'user_register_form' => 1,
       ),
-      'days' => array(
-        'type' => 'int',
-        'not null' => TRUE,
-        'default' => 0,
-        'description' => 'Days activate status user',
+      'widget' => array(
+        'type' => 'date_popup',
       ),
-    ),
-    'unique keys' => array('uid' => array('uid')),
-  );
-  return $schema;
+    );
+    field_create_instance($instance);
+  }
 }

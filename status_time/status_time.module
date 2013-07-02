@@ -4,6 +4,7 @@
  * @file
  * status_time.module
  * Developer: Danilevsky Kirill k.danilevsky@gmail.com
+ * version 1.1
  */
 
 /**
@@ -13,113 +14,44 @@
 function status_time_help($path, $arg) {
   switch ($path) {
     case "admin/help#status_time":
-      return t("<p>This module allow users to assign the lifetime in days their account.</p>");
+      return t("<p>This module allow users to assign the lifetime their account.</p>");
+  }
+}
+
+/**
+ * Implementation of hook_field_access.
+ * 
+ * Our field displayed only admin.
+ */
+function status_time_field_access($op, $field, $entity_type, $entity, $account) {
+  if ($op == 'edit' && $field['field_name'] == 'field_end_date') {
+    if (!user_access('administrator', $account = NULL)) {
+      return FALSE;
+    }
   }
 }
 
 /**
  * Implementation of hook_form_form_id_alter.
  * 
- * Add new field to the form for add new user if is admin.
+ * Register new user.
+ * Edit in field_end_date - input format. Set default value = ''. 
  */
 function status_time_form_user_register_form_alter(&$form, &$form_state) {
-  if (user_access('administrator', $account = NULL)) {
-    $form['status_time'] = array(
-      '#type' => 'textfield',
-      '#title' => t('Lifetime'),
-      '#default_value' => 0,
-      '#weight' => 3,
-      '#size' => 5,
-      '#maxlength' => 5,
-      '#description' => t('Enter the lifetime of the user\'s account in days (0 - unlimited).'),
-    );
-  }
+  $form['field_end_date']['und'][0]['#default_value']['value'] = '';
+  $form_state['field']['field_end_date']['und']['instance']['widget']['settings']['input_format'] = 'm/d/Y';
   return $form;
 }
 
 /**
  * Implementation of hook_form_form_id_alter.
  * 
- * Add new field to the form edit user if is admin.
+ * Edit user profile.
+ * Edit in field_end_date - input format.
  */
 function status_time_form_user_profile_form_alter(&$form, &$form_state) {
-  // Check permission.
-  if (user_access('administrator', $account = NULL)) {
-    // Get days from table.
-    $lifetime = db_select('field_status_time', 's')
-        ->fields('s', array('days'))
-        ->condition('s.uid', $form['#user']->uid)
-        ->execute()
-        ->fetchField();
-    if (empty($lifetime)) {
-      $lifetime = 0;
-    }
-    $form['status_time'] = array(
-      '#type' => 'textfield',
-      '#title' => t('Lifetime'),
-      '#default_value' => $lifetime,
-      '#weight' => 3,
-      '#size' => 5,
-      '#maxlength' => 5,
-      '#description' => t('Enter the lifetime of the user\'s account in days (0 - unlimited).'),
-    );
-  }
+  $form_state['field']['field_end_date']['und']['instance']['widget']['settings']['input_format'] = 'm/d/Y';
   return $form;
-}
-
-/**
- * Implementation of hook_user_insert.
- *
- * We will be insert record the lifetime of the user's account.
- * 
- */
-function status_time_user_insert(&$edit, $account, $category) {
-  // Insert field data to DB only admin.
-  if (user_access('administrator')) {
-    db_insert('field_status_time')
-        ->fields(array('uid' => $account->uid, 'days' => $edit['status_time']))
-        ->execute();
-  }
-}
-
-/**
- * Implementation of hook_user_update.
- *
- * We will be edit record the lifetime of the user's account.
- * 
- */
-function status_time_user_update(&$edit, $account, $category) {
-  // Update field data to DB.
-  if (user_access('administrator')) {
-    $lifetime = db_select('field_status_time', 's')
-        ->fields('s', array('days'))
-        ->condition('s.uid', $account->uid)
-        ->execute()
-        ->fetchField();
-    if (empty($lifetime)) {
-      db_insert('field_status_time')
-          ->fields(array('uid' => $account->uid, 'days' => $edit['status_time']))
-          ->execute();
-    }
-    else {
-      db_update('field_status_time')
-          ->fields(array('days' => $edit['status_time']))
-          ->condition('uid', $account->uid)
-          ->execute();
-    }
-  }
-}
-
-/**
- * Implementation of hook_user_delete.
- *
- * We will be delete record the lifetime of the user's account.
- * 
- */
-function status_time_user_delete($account) {
-  db_delete('field_status_time')
-      ->condition('uid', $account->uid)
-      ->execute();
 }
 
 /**
@@ -128,17 +60,17 @@ function status_time_user_delete($account) {
  * Change status user's account if date is not actual.
  */
 function status_time_cron() {
-  $query = db_select('field_status_time', 's');
-  $query->leftJoin('users', 'u', 'u.uid=s.uid AND u.uid>1');
-  $query->fields('s', array('uid'));
+  $query = db_select('field_data_field_end_date', 'f');
+  $query->leftJoin('users', 'u', 'u.uid=f.entity_id AND u.uid>1');
   $query->condition('u.status', 1);
-  $query->condition('s.days', 0, '>');
-  $query->where('UNIX_TIMESTAMP(NOW()) > :created', array(':created' => 'u.created+(86400*s.days)'));
+  $query->where('UNIX_TIMESTAMP(NOW()) > f.field_end_date_value');
+  $query->fields('f', array('entity_id', 'field_end_date_value'));
+  $query->addExpression('UNIX_TIMESTAMP(NOW())', 'time');
   $result = $query->execute();
   foreach ($result as $key => $value) {
     db_update('users')
         ->fields(array('status' => 0))
-        ->condition('uid', $value->uid)
+        ->condition('uid', $value->entity_id)
         ->execute();
   }
 }
