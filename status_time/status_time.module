@@ -4,7 +4,7 @@
  * @file
  * status_time.module
  * Developer: Danilevsky Kirill k.danilevsky@gmail.com
- * version 1.1
+ * version 1.2
  */
 
 /**
@@ -24,8 +24,8 @@ function status_time_help($path, $arg) {
  * Our field displayed only admin.
  */
 function status_time_field_access($op, $field, $entity_type, $entity, $account) {
-  if ($op == 'edit' && $field['field_name'] == 'field_end_date') {
-    if (!user_access('administrator', $account = NULL)) {
+  if ($op == 'edit' && $field['field_name'] == 'st_field_end_date') {
+    if (!user_access('administer users', $account = NULL)) {
       return FALSE;
     }
   }
@@ -35,11 +35,11 @@ function status_time_field_access($op, $field, $entity_type, $entity, $account) 
  * Implementation of hook_form_form_id_alter.
  * 
  * Register new user.
- * Edit in field_end_date - input format. Set default value = ''. 
+ * Edit in st_field_end_date - input format. Set default value = ''. 
  */
 function status_time_form_user_register_form_alter(&$form, &$form_state) {
-  $form['field_end_date']['und'][0]['#default_value']['value'] = '';
-  $form_state['field']['field_end_date']['und']['instance']['widget']['settings']['input_format'] = 'm/d/Y';
+  $form['st_field_end_date'][LANGUAGE_NONE][0]['#default_value']['value'] = '';
+  $form_state['field']['st_field_end_date']['und']['instance']['widget']['settings']['input_format'] = 'm/d/Y';
   return $form;
 }
 
@@ -47,10 +47,10 @@ function status_time_form_user_register_form_alter(&$form, &$form_state) {
  * Implementation of hook_form_form_id_alter.
  * 
  * Edit user profile.
- * Edit in field_end_date - input format.
+ * Edit in st_field_end_date - input format.
  */
 function status_time_form_user_profile_form_alter(&$form, &$form_state) {
-  $form_state['field']['field_end_date']['und']['instance']['widget']['settings']['input_format'] = 'm/d/Y';
+  $form_state['field']['st_field_end_date']['und']['instance']['widget']['settings']['input_format'] = 'm/d/Y';
   return $form;
 }
 
@@ -60,12 +60,11 @@ function status_time_form_user_profile_form_alter(&$form, &$form_state) {
  * Change status user's account if date is not actual.
  */
 function status_time_cron() {
-  $query = db_select('field_data_field_end_date', 'f');
+  $query = db_select('field_data_st_field_end_date', 'f');
   $query->leftJoin('users', 'u', 'u.uid=f.entity_id AND u.uid>1');
   $query->condition('u.status', 1);
-  $query->where('UNIX_TIMESTAMP(NOW()) > f.field_end_date_value');
-  $query->fields('f', array('entity_id', 'field_end_date_value'));
-  $query->addExpression('UNIX_TIMESTAMP(NOW())', 'time');
+  $query->where('UNIX_TIMESTAMP(NOW()) > f.st_field_end_date_value');
+  $query->fields('f', array('entity_id'));
   $result = $query->execute();
   foreach ($result as $key => $value) {
     db_update('users')

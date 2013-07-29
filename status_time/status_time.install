@@ -4,7 +4,7 @@
  * @file 
  * status_time.install
  * Developer: Danilevsky Kirill k.danilevsky@gmail.com
- * version 1.1
+ * version 1.2
  */
 
 /**
@@ -12,8 +12,8 @@
  *
  */
 function status_time_uninstall() {
-  field_delete_field('field_end_date');
-  field_delete_instance(field_info_instance('user', 'field_end_date', 'user'));
+  field_delete_field('st_field_end_date');
+  field_delete_instance(field_info_instance('user', 'st_field_end_date', 'user'));
 }
 
 /**
@@ -21,15 +21,15 @@ function status_time_uninstall() {
  */
 function status_time_install() {
   // Check if our field is not already created.
-  if (!field_info_field('field_end_date')) {
+  if (!field_info_field('st_field_end_date')) {
     $field = array(
-      'field_name' => 'field_end_date',
+      'field_name' => 'st_field_end_date',
       'type' => 'datestamp',
     );
     field_create_field($field);
     // Create the instance on the bundle.
     $instance = array(
-      'field_name' => 'field_end_date',
+      'field_name' => 'st_field_end_date',
       'entity_type' => 'user',
       'label' => 'Date account blocking',
       'description' => 'Enter the date when the user will be blocked. Empty field - no limits.',
